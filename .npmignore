@@ -1,0 +1,14 @@
+/src/
+/tests/
+/coverage/
+/scripts/
+/examples/bin/
+
+/.babelrc
+/.coveralls.yml
+/.travis.yml
+
+.npmignore
+*.*~
+
+.keepme

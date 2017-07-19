@@ -1,0 +1,158 @@
+function tasksf_getCurrentReleaseVersion() {
+    PACKAGE="../package.json"
+
+    cat $PACKAGE | while read line; do
+        if [[ $line == *"version"* ]]; then
+            currentVersion=${line//[a-z\": ,]/}
+            echo $currentVersion
+            break;
+        fi
+    done
+}
+
+function tasksf_getNextReleaseVersion() {
+    IFS='.' read -a parts <<< "$1"
+    length=${#parts[@]}
+    last=${parts[length-1]}
+    next=$((last+1))
+    parts[$length-1]=$next
+    nextVersion=$(tasksf_join . ${parts[@]})
+    echo $nextVersion
+}
+
+function tasksf_join() {
+    local IFS="$1"
+    shift
+    echo "$*"
+}
+
+function tasksf_release() {
+    currentVersion=$(tasksf_getCurrentReleaseVersion)
+    nextVersion=$(tasksf_getNextReleaseVersion $currentVersion)
+    echo "Current release version is: $currentVersion"
+    read -p "Set next release version (default is $nextVersion) : " -r
+    if [[ $REPLY =~ ^$ ]]; then
+        nextVersionConfirmed=$nextVersion
+    else
+        nextVersionConfirmed=$REPLY
+    fi
+    read -p "Continue with next release version $nextVersionConfirmed (y/N) ? " -n 1 -r
+    echo    # (optional) move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        tasksf_patchPackage $nextVersionConfirmed
+        tasksf_getGitDiff $currentVersion $nextVersionConfirmed
+        tasksf_normalizeChangelog
+        tasksf_updateChangelog
+        tasksf_commitChanges $nextVersionConfirmed
+        tasksf_npmCleanup
+        tasksf_npmPublish
+    fi
+}
+
+function tasksf_patchPackage() {
+    PACKAGE="../package.json"
+
+    i=0
+    cat $PACKAGE | while read line; do
+        i=$((i+1))
+        if [[ $line == *"version"* ]]; then
+            clean=${line//[0-9.]/}
+            populated=${clean//\"\"/\"$1\"}
+            replacement_escaped=$( echo "  $populated" | sed -e 's/[\/&]/\\&/g' )
+            sed -i -e "${i}s/.*/$replacement_escaped/" "$PACKAGE"
+            #rm "$PACKAGE-e"
+            break
+        fi
+    done
+}
+
+function tasksf_getGitDiff() {
+    CHANGELOG="./changelog"
+
+    git log $1..HEAD --pretty=format:"- %s" --date=short > $CHANGELOG
+    sed -i -s "1s/^/# Please enter the release messages for your changes. Empty lines\\
+# and lines starting with single '#' with a following space will be ignored\\
+# and not included in the changelog. The structure provided is just an example\\
+# so feel free to change it as you wish. Good luck...\\
+\\
+## [$2] - $(date +'%Y-%m-%d')\\
+# ### Summary\\
+# summary goes here...\\
+# ### Important\\
+# important notes here...\\
+# ### API changes\\
+# api changes here...\\
+# ### CUSTOM HEADER\\
+# custom values...\\
+### Changes\\
+/g" "$CHANGELOG"
+    ${EDITOR:-vim} $CHANGELOG
+    echo '' >> $CHANGELOG
+}
+
+function tasksf_normalizeChangelog() {
+    CHANGELOG="./changelog"
+
+    sed -i.bak -n '/^# /!p' "$CHANGELOG"
+    sed -i.bak -n '/^ *$/!p' "$CHANGELOG"
+
+    echo '' >> $CHANGELOG
+}
+
+function tasksf_updateChangelog() {
+    _CHANGELOG="./changelog"
+    CHANGELOG="../CHANGELOG.md"
+
+    i=0
+    cat $CHANGELOG | while read line; do
+        if [[ $line == *"## "* ]]; then
+            replacement_escaped=$( echo "$content" | sed -e 's/[\/&]/\\&/g')
+            sed -i -e "${i}r ${_CHANGELOG}" "$CHANGELOG"
+            break
+        fi
+        i=$((i+1))
+    done
+
+    rm $_CHANGELOG
+}
+
+function tasksf_commitChanges() {
+    CHANGELOG="../CHANGELOG.md"
+    PACKAGE="../package.json"
+
+    git add $CHANGELOG
+    git add $PACKAGE
+    git commit -m "Version $1"
+    git push origin
+    git push github
+    git tag $1 --force
+    git push origin $1
+    git push github $1
+}
+
+function tasksf_npmPrePublish() {
+    cd ../
+    npm run coveralls
+    npm run standalone
+}
+
+function tasksf_npmPublish() {
+    tasksf_npmPrePublish
+    npm publish
+    tasksf_npmPostPublish
+}
+
+function tasksf_npmPostPublish() {
+    cd scripts/
+}
+
+function tasksf_npmCleanup() {
+    cd ../
+    rm CHANGELOG.md-e
+    rm package.json-e
+    rm scripts/changelog-s
+    rm scripts/changelog.bak
+    cd scripts/
+}
+
+tasksf_release
