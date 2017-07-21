@@ -81,6 +81,28 @@ describe('Test Injector', () => {
     expect(Injector._launchers.length).to.equal(0);
   });
 
+  it('to inject before with parameters', () => {
+    expect(Injector._launchers.length).to.equal(0);
+    const method = () => {};
+    const inject = () => {};
+    const launch = Injector.inject(method, inject, Injector.INJECT_BEFORE);
+    expect(Injector._launchers.length).to.equal(1);
+    expect(Injector._launchers[0].before.length).to.equal(1);
+    Injector.reset(launch);
+    expect(Injector._launchers.length).to.equal(0);
+  });
+
+  it('to inject after with parameters', () => {
+    expect(Injector._launchers.length).to.equal(0);
+    const method = () => {};
+    const inject = () => {};
+    const launch = Injector.inject(method, inject, Injector.INJECT_AFTER);
+    expect(Injector._launchers.length).to.equal(1);
+    expect(Injector._launchers[0].after.length).to.equal(1);
+    Injector.reset(launch);
+    expect(Injector._launchers.length).to.equal(0);
+  });
+
   it('to inject after', () => {
     expect(Injector._launchers.length).to.equal(0);
     const method = () => {};
@@ -96,11 +118,26 @@ describe('Test Injector', () => {
     expect(Injector._launchers.length).to.equal(0);
     const method = () => {};
     const inject = () => {};
-    const launch = Injector.injectAfter(method, inject);
+    const launch = Injector.inject(method, inject);
     expect(Injector._launchers.length).to.equal(1);
     expect(Injector._launchers[0].launch).to.equal(launch);
     Injector.reset(launch);
     expect(Injector._launchers.length).to.equal(0);
   });
+
+  it('to have remove', () => {
+    expect(Injector._launchers.length).to.equal(0);
+    const method = () => {};
+    const inject = () => {};
+    const launch = Injector.inject(method, inject);
+    expect(Injector._launchers.length).to.equal(1);
+    expect(Injector._launchers[0].launch).to.equal(launch);
+    expect(Injector._launchers[0].before.length).to.equal(1);
+    Injector.remove(launch, inject);
+    expect(Injector._launchers[0].before.length).to.equal(0);
+    Injector.reset(launch);
+    expect(Injector._launchers.length).to.equal(0);
+  });
+
 
 });
