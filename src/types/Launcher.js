@@ -12,7 +12,9 @@ class Launcher {
       const result = callback(...args);
       args = result !== undefined ? result : args;
     });
-    this.original(...args);
+    if (this.original !== undefined) {
+      this.original(...args);
+    }
     this.after.forEach((callback) => {
       const result = callback(...args);
       args = result !== undefined ? result : args;
