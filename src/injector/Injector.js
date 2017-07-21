@@ -25,6 +25,16 @@ class Injector {
     return launcher.launch;
   }
 
+  static remove(method, remove) {
+    const launcher = Injector._toLauncher(method);
+    if (launcher.before.indexOf(remove) !== -1) {
+      launcher.before.splice(launcher.before.indexOf(remove), 1);
+    } else if (launcher.after.indexOf(remove) !== -1) {
+      launcher.after.splice(launcher.after.indexOf(remove), 1);
+    }
+    return method;
+  }
+
   static reset(method) {
     const launcher = Injector._locate(method);
     if (launcher !== undefined) {

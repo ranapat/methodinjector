@@ -1,6 +1,6 @@
 import { Injector } from '../../lib';
 import { inject, injectBefore, injectAfter } from '../../lib';
-import { reset } from '../../lib';
+import { reset, remove } from '../../lib';
 
 
 console.log();
@@ -37,9 +37,12 @@ class TestClass {
 const i = new TestClass();
 let test1 = i.test.bind(i);
 
+const i1 = () => { console.log('!!!!injected!!!!'); };
+test1 = inject(test1, i1, 1);
 test1 = inject(test1, (...args) => { console.log('we change it here!!! 1'); });
 test1 = injectBefore(test1, (...args) => { console.log('we change it here!!! 2'); });
 test1 = injectAfter(test1, (...args) => { console.log('we change it here!!! 3'); });
-test1 = reset(test1);
+test1 = remove(test1, i1);
+//test1 = reset(test1);
 
 test1(1, 2, 3);
