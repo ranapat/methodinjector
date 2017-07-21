@@ -2,7 +2,7 @@
 
 ### Important
 
-- [ ] Implement method injector
+- [x] Implement method injector
 
 ### General:
 
@@ -11,4 +11,4 @@
 ### Others:
 
 - [ ] more examples
-- [ ] documentation
+- [ ] better documentation
