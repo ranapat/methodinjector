@@ -139,5 +139,14 @@ describe('Test Injector', () => {
     expect(Injector._launchers.length).to.equal(0);
   });
 
+  it('to keep the original result', () => {
+    const method = () => { return 'method'; };
+    const inject = () => { return 'inject'; };
+    const launch = Injector.inject(method, inject);
+    expect(method()).to.equal('method');
+    expect(launch()).to.equal('method');
+    Injector.reset(launch);
+    expect(Injector._launchers.length).to.equal(0);
+  });
 
 });
